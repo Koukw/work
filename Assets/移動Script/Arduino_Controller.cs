@@ -15,10 +15,9 @@ public class BoatMovement : MonoBehaviour
     private Vector3 velocity = Vector3.zero;
     private float smoothTime = 0.3f;
 
-    private bool wasDetected = false;
-    private float lastTriggerTime = 0.0f;
-    private float timeThreshold = 0.3f;
-
+    private bool previousLeftPaddle = false;
+    private bool previousRightPaddle = false;
+    
     private float currentRotation = 0f;  // 目前的旋轉角度
     private float targetRotation = 0f;   // 目標旋轉角度
     private float rotationSpeed = 2.0f;  // 旋轉速度
@@ -42,15 +41,9 @@ public class BoatMovement : MonoBehaviour
                 bool isLeftPaddle = (data == "1");  // 左槳
                 bool isRightPaddle = (data == "2"); // 右槳
 
-                if (isLeftPaddle || isRightPaddle)
+                // **只有當狀態從未偵測 → 偵測到時才觸發**
+                if ((isLeftPaddle && !previousLeftPaddle) || (isRightPaddle && !previousRightPaddle))
                 {
-                    float currentTime = Time.time;
-                    if (currentTime - lastTriggerTime < timeThreshold)
-                        speedMultiplier = Mathf.Min(speedMultiplier + Time.deltaTime * 5.0f, maxMultiplier);
-                    else
-                        speedMultiplier = 1.0f;
-
-                    lastTriggerTime = currentTime;
                     float actualMoveDistance = baseMoveDistance * speedMultiplier;
 
                     // **當划左槳時，向左前方推進並向左旋轉**
@@ -65,8 +58,14 @@ public class BoatMovement : MonoBehaviour
                         targetPosition = transform.position + Quaternion.Euler(0, currentRotation, 0) * new Vector3(actualMoveDistance, 0, actualMoveDistance);
                         targetRotation += 5f; // 小幅向右旋轉
                     }
+
+                    // **速度增益機制**
+                    speedMultiplier = Mathf.Min(speedMultiplier + 0.5f, maxMultiplier);
                 }
-                wasDetected = isLeftPaddle || isRightPaddle;
+                
+                // **更新上次的狀態**
+                previousLeftPaddle = isLeftPaddle;
+                previousRightPaddle = isRightPaddle;
             }
         }
         catch (System.Exception) { }
@@ -74,15 +73,12 @@ public class BoatMovement : MonoBehaviour
         // **使用 SmoothDamp 讓移動更平滑**
         transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref velocity, smoothTime);
 
-        // **平滑旋轉，不回正**
+        // **平滑旋轉**
         currentRotation = Mathf.Lerp(currentRotation, targetRotation, Time.deltaTime * rotationSpeed);
         transform.rotation = Quaternion.Euler(0, currentRotation, 0);
 
-        // **當沒有感測到時，速度慢慢下降**
-        if (!wasDetected)
-        {
-            speedMultiplier = Mathf.Max(speedMultiplier - Time.deltaTime * 3.0f, 1.0f);
-        }
+        // **速度衰減**
+        speedMultiplier = Mathf.Max(speedMultiplier * decayRate, 1.0f);
     }
 
     void OnApplicationQuit()

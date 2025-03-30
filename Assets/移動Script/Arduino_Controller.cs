@@ -10,6 +10,7 @@ public class BoatMovement : MonoBehaviour
     public float speedMultiplier = 1.0f;    // 速度增益
     public float maxMultiplier = 5.0f;      // 最大加速倍數
     public float decayRate = 0.9f;          // 速度衰減率
+    public float rotationStep = 5f;
 
     private Vector3 targetPosition;
     private Vector3 velocity = Vector3.zero;
@@ -50,13 +51,13 @@ public class BoatMovement : MonoBehaviour
                     if (isLeftPaddle)
                     {
                         targetPosition = transform.position + Quaternion.Euler(0, currentRotation, 0) * new Vector3(-actualMoveDistance, 0, actualMoveDistance);
-                        targetRotation -= 5f; // 小幅向左旋轉
+                        targetRotation -= rotationStep; // 小幅向左旋轉
                     }
                     // **當划右槳時，向右前方推進並向右旋轉**
                     else if (isRightPaddle)
                     {
                         targetPosition = transform.position + Quaternion.Euler(0, currentRotation, 0) * new Vector3(actualMoveDistance, 0, actualMoveDistance);
-                        targetRotation += 5f; // 小幅向右旋轉
+                        targetRotation += rotationStep; // 小幅向右旋轉
                     }
 
                     // **速度增益機制**
